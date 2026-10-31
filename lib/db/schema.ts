@@ -28,6 +28,7 @@ export const uploads = pgTable(
     userId: uuid('user_id').notNull().references(() => users.id),
     r2Key: text('r2_key').notNull().unique(),
     publicUrl: text('public_url').notNull(),
+    originalName: text('original_name'),
     bufferPostId: text('buffer_post_id'),
     status: uploadStatus('status').notNull().default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -35,3 +36,14 @@ export const uploads = pgTable(
   },
   (table) => [index('uploads_status_idx').on(table.status)],
 );
+
+export const apiKeys = pgTable('api_keys', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id),
+  name: text('name').notNull(),
+  keyHash: text('key_hash').notNull().unique(),
+  keyPrefix: text('key_prefix').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});

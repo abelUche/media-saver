@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   const [upload] = await db
     .insert(uploads)
-    .values({ userId: session.userId, r2Key: key, publicUrl })
+    .values({ userId: session.userId, r2Key: key, publicUrl, originalName: file.name })
     .returning({ id: uploads.id });
 
   return NextResponse.json({ id: upload.id, url: publicUrl }, { status: 201 });

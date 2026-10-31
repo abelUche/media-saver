@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/session';
+import { getAuthenticatedUserId } from '@/lib/auth';
 import { uploadFile, ALLOWED_TYPES } from '@/lib/r2';
 import { db } from '@/lib/db';
 import { uploads } from '@/lib/db/schema';
@@ -7,10 +7,10 @@ import { uploads } from '@/lib/db/schema';
 const MAX_BYTES = 4 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
-  const session = await getSession();
-  if (!session.userId) {
-    return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
-  }
+    const userId = await getAuthenticatedUserId(request);
+    if (!userId) {
+        return NextResponse.json({ error: 'Not logged in or invalid API key' }, { status: 401 });
+    }
 
   const formData = await request.formData();
   const file = formData.get('file');
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   const [upload] = await db
     .insert(uploads)
-    .values({ userId: session.userId, r2Key: key, publicUrl, originalName: file.name })
+    .values({ userId: userId, r2Key: key, publicUrl, originalName: file.name })
     .returning({ id: uploads.id });
 
   return NextResponse.json({ id: upload.id, url: publicUrl }, { status: 201 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { and, eq } from 'drizzle-orm';
-import { getSession } from '@/lib/session';
+import { getAuthenticatedUserId } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { uploads } from '@/lib/db/schema';
 import { getAccessToken, bufferRequest, BufferApiError } from '@/lib/buffer';
@@ -44,10 +44,10 @@ function buildMutation(scheduled: boolean) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getSession();
-  if (!session.userId) {
-    return NextResponse.json({ error: 'Not logged in' }, { status: 401 });
-  }
+    const userId = await getAuthenticatedUserId(request);
+   if (!userId) {
+     return NextResponse.json({ error: 'Not logged in or invalid API key' }, { status: 401 });
+   }
 
   const body = await request.json().catch(() => null);
   const { uploadId, channelId, text, dueAt, draft } = body ?? {};
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   const [upload] = await db
     .select()
     .from(uploads)
-    .where(and(eq(uploads.id, uploadId), eq(uploads.userId, session.userId)));
+    .where(and(eq(uploads.id, uploadId), eq(uploads.userId, userId)));
 
   if (!upload) {
     return NextResponse.json({ error: 'Upload not found' }, { status: 404 });
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const accessToken = await getAccessToken(session.userId);
+    const accessToken = await getAccessToken(userId);
     const scheduled = typeof dueAt === 'string';
 
     const data = await bufferRequest<CreatePostResult>(accessToken, buildMutation(scheduled), {

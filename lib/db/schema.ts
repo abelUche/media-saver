@@ -30,6 +30,7 @@ export const uploads = pgTable(
     publicUrl: text('public_url').notNull(),
     originalName: text('original_name'),
     bufferPostId: text('buffer_post_id'),
+    dueAt: timestamp('due_at', { withTimezone: true}),
     status: uploadStatus('status').notNull().default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

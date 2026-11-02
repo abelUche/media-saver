@@ -15,6 +15,13 @@
       "when": 1793425023260,
       "tag": "0001_peaceful_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793628869340,
+      "tag": "0002_clumsy_spiral",
+      "breakpoints": true
     }
   ]
 }

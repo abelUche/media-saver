@@ -76,8 +76,10 @@ export async function bufferRequest<T>(
   }
 
   const result = await response.json();
-  if (result.errors?.length) {
-    throw new BufferApiError(result.errors[0].message, 502);
+    if (result.errors?.length) {
+    const message: string = result.errors[0].message ?? 'Buffer API error';
+    const status = /not found/i.test(message) ? 404 : 502;
+    throw new BufferApiError(message, status);
   }
 
   return result.data as T;

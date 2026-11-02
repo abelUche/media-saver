@@ -100,7 +100,11 @@ export async function createPostForUpload(userId: string, upload: Upload, option
 
   await db
     .update(uploads)
-    .set({ status: 'scheduled', bufferPostId: post.id })
+    .set({ 
+        status: 'scheduled', 
+        bufferPostId: post.id,
+        dueAt: post.dueAt ? new Date(post.dueAt) : null,
+     })
     .where(eq(uploads.id, upload.id));
 
   return { uploadId: upload.id, postId: post.id, status: post.status, dueAt: post.dueAt };

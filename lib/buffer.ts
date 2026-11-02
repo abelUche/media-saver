@@ -3,20 +3,12 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { BUFFER_TOKEN_URL } from '@/lib/oauth';
+import { ApiError } from '@/lib/errors';
 
 const BUFFER_API_URL = 'https://api.buffer.com';
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
-export class BufferApiError extends Error {
-  status: number;
-  retryAfter?: number;
-
-  constructor(message: string, status: number, retryAfter?: number) {
-    super(message);
-    this.status = status;
-    this.retryAfter = retryAfter;
-  }
-}
+export class BufferApiError extends ApiError {}
 
 export async function getAccessToken(userId: string): Promise<string> {
   const [user] = await db.select().from(users).where(eq(users.id, userId));

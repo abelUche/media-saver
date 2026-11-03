@@ -115,7 +115,7 @@ export default function DocsPage() {
     <>
       <SiteHeader active="docs" />
 
-      <div className="mx-auto grid max-w-6xl gap-16 px-6 md:px-8 lg:grid-cols-[200px_1fr]">
+      <div className="mx-auto grid max-w-6xl gap-16 px-6 md:px-8 lg:grid-cols-[200px_minmax(0,1fr)]">
         <nav aria-label="On this page" className="hidden lg:block">
           <div className="sticky top-8 flex flex-col pt-[88px] text-sm">
             <span className="pb-3.5 text-[13px] text-muted">On this page</span>
@@ -131,7 +131,7 @@ export default function DocsPage() {
           </div>
         </nav>
 
-        <article className="flex max-w-[800px] flex-col gap-[72px] pb-32 pt-20">
+        <article className="flex min-w-0 max-w-[800px] flex-col gap-[72px] pb-32 pt-20">
           <section id="quick-start" className="flex scroll-mt-8 flex-col gap-5">
             <h1 className="font-serif text-5xl font-light leading-none tracking-[-0.02em] md:text-6xl">
               The Media Saver API

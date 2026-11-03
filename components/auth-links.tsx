@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { getSession } from '@/lib/session';
 import { connection } from 'next/server';
 
-const HEADER_BUTTON = 'bg-snow px-[18px] py-2.5 font-semibold text-ink';
+const HEADER_BUTTON =
+  'bg-snow px-3 py-2 text-[13px] font-semibold text-ink sm:px-[18px] sm:py-2.5 sm:text-sm';
 
 export function LoggedOutLinks() {
   return (

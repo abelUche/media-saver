@@ -10,18 +10,20 @@ type Props = {
 export function SiteHeader({ active }: Props) {
   return (
     <header className="border-b border-line">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-6 py-5 md:px-8">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-3 px-6 py-4 md:px-8 md:py-5">
         <Logo />
-        <nav className="flex flex-wrap items-center gap-7 text-sm">
+        <div className="ml-auto flex items-center gap-6 text-sm md:order-last md:ml-0">
+          <Suspense fallback={<LoggedOutLinks />}>
+            <HeaderAuthLinks />
+          </Suspense>
+        </div>
+        <nav className="order-last flex w-full gap-6 text-sm md:order-none md:ml-auto md:w-auto">
           <Link href="/#how" className="text-muted hover:text-paper">
             How it works
           </Link>
           <Link href="/docs" className={active === 'docs' ? 'text-paper' : 'text-muted hover:text-paper'}>
             API docs
           </Link>
-          <Suspense fallback={<LoggedOutLinks />}>
-            <HeaderAuthLinks />
-          </Suspense>
         </nav>
       </div>
     </header>

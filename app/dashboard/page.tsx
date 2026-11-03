@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { getSession } from '@/lib/session';
 import { getChannels } from '@/lib/channels';
-import { getActiveKeys, getRecentUploads } from '@/lib/dashboard-data';
+import { getActiveKeys, getRecentUploads, getUploadChannels } from '@/lib/dashboard-data';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { ScheduleForm } from '@/components/dashboard/schedule-form';
 import { ApiKeysPanel } from '@/components/dashboard/api-keys-panel';
@@ -32,6 +32,13 @@ async function DashboardContent() {
     getActiveKeys(userId),
   ]);
 
+    const postChannels = await getUploadChannels(uploadList.map((upload) => upload.id)).catch(
+    (error) => {
+      console.error('Could not load upload channels:', error.cause ?? error);
+      return {} as Record<string, string[]>;
+    },
+  );
+
   const initialKeys = keys.map((key) => ({
     ...key,
     createdAt: key.createdAt.toISOString(),
@@ -54,7 +61,7 @@ async function DashboardContent() {
         </div>
       </div>
 
-      <UploadsTable uploads={uploadList} channels={channels ?? []} />
+      <UploadsTable uploads={uploadList} channels={channels ?? []} postChannels={postChannels} />
     </>
   );
 }

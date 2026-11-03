@@ -29,16 +29,23 @@ function scheduledFor(upload: Upload) {
 type Props = {
   uploads: Upload[];
   channels: Channel[];
+  postChannels: Record<string, string[]>;
 };
 
-export function UploadsTable({ uploads: rows, channels }: Props) {
+export function UploadsTable({ uploads: rows, channels, postChannels }: Props) {
   const channelNames = new Map(channels.map((channel) => [channel.id, channel.name]));
+
+  function channelsFor(upload: Upload) {
+    const ids = postChannels[upload.id] ?? (upload.channelId ? [upload.channelId] : []);
+    if (ids.length === 0) return 'Not set';
+    return ids.map((id) => channelNames.get(id) ?? 'Unknown channel').join(', ');
+  }
 
   return (
     <section className="flex flex-col gap-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-serif text-4xl font-light">Uploads</h2>
-        <span className="text-[13px] text-muted">Published files are deleted at the next daily cleanup</span>
+        <span className="text-[13px] text-muted">Files are deleted once every post has published</span>
       </div>
 
       {rows.length === 0 ? (
@@ -51,7 +58,7 @@ export function UploadsTable({ uploads: rows, channels }: Props) {
             <thead>
               <tr className="text-left text-xs text-muted">
                 <th className="py-4 pr-4 font-medium">File</th>
-                <th className="p-4 font-medium">Channel</th>
+                <th className="p-4 font-medium">Channels</th>
                 <th className="p-4 font-medium">Scheduled for</th>
                 <th className="py-4 pl-4 text-right font-medium">Status</th>
               </tr>
@@ -80,9 +87,7 @@ export function UploadsTable({ uploads: rows, channels }: Props) {
                         </span>
                       </div>
                     </td>
-                    <td className="p-4 text-muted">
-                      {upload.channelId ? channelNames.get(upload.channelId) ?? 'Unknown channel' : 'Not set'}
-                    </td>
+                    <td className="p-4 text-muted">{channelsFor(upload)}</td>
                     <td className="p-4 text-muted">{scheduledFor(upload)}</td>
                     <td className="py-4 pl-4 text-right">
                       <span className={`px-2.5 py-[5px] text-xs font-medium ${status.className}`}>{status.label}</span>

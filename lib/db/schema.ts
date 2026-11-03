@@ -35,7 +35,7 @@ export const uploads = pgTable(
     originalName: text('original_name'),
     bufferPostId: text('buffer_post_id'),
     channelId: text('channel_id'),
-    dueAt: timestamp('due_at', { withTimezone: true}),
+    dueAt: timestamp('due_at', { withTimezone: true }),
     status: uploadStatus('status').notNull().default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
@@ -53,3 +53,19 @@ export const apiKeys = pgTable('api_keys', {
   lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
+
+export const postStatus = pgEnum('post_status', ['scheduled', 'sent', 'failed', 'removed']);
+
+export const uploadPosts = pgTable(
+  'upload_posts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    uploadId: uuid('upload_id').notNull().references(() => uploads.id),
+    channelId: text('channel_id').notNull(),
+    bufferPostId: text('buffer_post_id').notNull().unique(),
+    status: postStatus('status').notNull().default('scheduled'),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('upload_posts_upload_idx').on(table.uploadId)],
+);

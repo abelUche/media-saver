@@ -1,6 +1,6 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { apiKeys, uploads } from '@/lib/db/schema';
+import { apiKeys, uploads, uploadPosts } from '@/lib/db/schema';
 
 export async function getRecentUploads(userId: string) {
   return db
@@ -23,4 +23,18 @@ export async function getActiveKeys(userId: string) {
     .from(apiKeys)
     .where(and(eq(apiKeys.userId, userId), isNull(apiKeys.revokedAt)))
     .orderBy(desc(apiKeys.createdAt));
+}
+
+export async function getUploadChannels(uploadIds: string[]) {
+  if (uploadIds.length === 0) return {};
+  const rows = await db
+    .select({ uploadId: uploadPosts.uploadId, channelId: uploadPosts.channelId })
+    .from(uploadPosts)
+    .where(inArray(uploadPosts.uploadId, uploadIds));
+
+  const byUpload: Record<string, string[]> = {};
+  for (const row of rows) {
+    (byUpload[row.uploadId] ??= []).push(row.channelId);
+  }
+  return byUpload;
 }

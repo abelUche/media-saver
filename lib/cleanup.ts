@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, isNull, lt, lte, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { uploads } from '@/lib/db/schema';
+import { uploads, uploadPosts } from '@/lib/db/schema';
 import { deleteFile } from '@/lib/r2';
 import { getAccessToken, bufferRequest, BufferApiError } from '@/lib/buffer';
 
@@ -18,6 +18,7 @@ const POST_STATUS_QUERY = `
 
 type PostStatusResult = { post: { id: string; status: string } | null };
 type Upload = typeof uploads.$inferSelect;
+type PostState = 'scheduled' | 'sent' | 'failed' | 'removed';
 
 export type CleanupSummary = {
   checked: number;
@@ -50,6 +51,10 @@ async function removeFile(upload: Upload, statusIfDeleteFails: 'published' | nul
   return true;
 }
 
+async function setPostState(postId: string, status: PostState) {
+  await db.update(uploadPosts).set({ status }).where(eq(uploadPosts.id, postId));
+}
+
 export async function runCleanup(): Promise<CleanupSummary> {
   const summary: CleanupSummary = {
     checked: 0,
@@ -62,6 +67,7 @@ export async function runCleanup(): Promise<CleanupSummary> {
   };
   const now = new Date();
 
+  // Pass 1: retry deletes that failed on an earlier run.
   const published = await db
     .select()
     .from(uploads)
@@ -72,6 +78,7 @@ export async function runCleanup(): Promise<CleanupSummary> {
     if (await removeFile(upload, 'published')) summary.deleted++;
   }
 
+  // Pass 2: check every post of each due upload.
   const due = await db
     .select()
     .from(uploads)
@@ -102,39 +109,55 @@ export async function runCleanup(): Promise<CleanupSummary> {
       continue;
     }
 
-    let result: PostStatusResult;
-    try {
-      result = await bufferRequest<PostStatusResult>(token, POST_STATUS_QUERY, {
-        postId: upload.bufferPostId,
-      });
-    } catch (error) {
-      if (error instanceof BufferApiError && error.status === 429) {
-        summary.stoppedEarly = true;
-        break;
-      }
-            if (error instanceof BufferApiError && error.status === 404) {
+    const posts = await db.select().from(uploadPosts).where(eq(uploadPosts.uploadId, upload.id));
+
+    for (const post of posts) {
+      if (post.status !== 'scheduled') continue;
+      try {
+        const result = await bufferRequest<PostStatusResult>(token, POST_STATUS_QUERY, {
+          postId: post.bufferPostId,
+        });
         summary.checked++;
-        if (await removeFile(upload, 'published')) summary.deleted++;
-        continue;
+        const bufferStatus = result.post?.status;
+        const next: PostState | null = !result.post
+          ? 'removed'
+          : bufferStatus === 'sent'
+            ? 'sent'
+            : bufferStatus === 'error'
+              ? 'failed'
+              : null;
+        if (next) {
+          await setPostState(post.id, next);
+          post.status = next;
+        }
+      } catch (error) {
+        if (error instanceof BufferApiError && error.status === 429) {
+          summary.stoppedEarly = true;
+          break;
+        }
+        if (error instanceof BufferApiError && error.status === 404) {
+          summary.checked++;
+          await setPostState(post.id, 'removed');
+          post.status = 'removed';
+          continue;
+        }
+        console.error(`Status check failed for post ${post.bufferPostId}:`, error);
+        summary.skipped++;
       }
-      console.error(`Status check failed for upload ${upload.id}:`, error);
-      summary.skipped++;
-      continue;
     }
+    if (summary.stoppedEarly) break;
 
-    summary.checked++;
-    const status = result.post?.status;
-
-    if (!result.post || status === 'sent') {
-      if (await removeFile(upload, 'published')) summary.deleted++;
-    } else if (status === 'error') {
+    if (posts.length === 0 || posts.some((post) => post.status === 'scheduled')) {
+      summary.unchanged++;
+    } else if (posts.some((post) => post.status === 'failed')) {
       await db.update(uploads).set({ status: 'failed' }).where(eq(uploads.id, upload.id));
       summary.failed++;
-    } else {
-      summary.unchanged++;
+    } else if (await removeFile(upload, 'published')) {
+      summary.deleted++;
     }
   }
 
+  // Pass 3: remove files that never got a post.
   const orphans = await db
     .select()
     .from(uploads)

@@ -23,13 +23,23 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
   const [file, setFile] = useState<File | null>(null);
   const [inputKey, setInputKey] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [channelId, setChannelId] = useState(channels[0]?.id ?? '');
+  const [selectedIds, setSelectedIds] = useState<string[]>(channels[0] ? [channels[0].id] : []);
   const [when, setWhen] = useState<'queue' | 'time'>('queue');
   const [dueLocal, setDueLocal] = useState('');
   const [text, setText] = useState('');
   const [asDraft, setAsDraft] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+
+  function toggleChannel(id: string) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    );
+  }
+
+  function channelNames(ids: string[]) {
+    return ids.map((id) => channels.find((channel) => channel.id === id)?.name ?? id).join(', ');
+  }
 
   function chooseFile(candidate: File | undefined) {
     if (!candidate) return;
@@ -55,6 +65,10 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
     event.preventDefault();
     if (!file) {
       setStatus({ kind: 'error', message: 'Choose an image to post.' });
+      return;
+    }
+    if (selectedIds.length === 0) {
+      setStatus({ kind: 'error', message: 'Choose at least one channel.' });
       return;
     }
     if (!text.trim()) {
@@ -96,7 +110,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           uploadId: slot.uploadId,
-          channelId,
+          channelIds: selectedIds,
           text,
           dueAt: when === 'time' ? new Date(dueLocal).toISOString() : undefined,
           draft: asDraft,
@@ -108,7 +122,22 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
         return;
       }
 
-      setStatus({ kind: 'success', message: asDraft ? 'Draft saved in Buffer.' : 'Post scheduled in Buffer.' });
+      const count: number = data.posts?.length ?? 1;
+      const failed: { channelId: string; error: string }[] = data.errors ?? [];
+      const done = asDraft ? 'Saved as a draft' : 'Scheduled';
+      const plural = count === 1 ? '' : 's';
+
+      if (failed.length > 0) {
+        setStatus({
+          kind: 'error',
+          message: `${done} on ${count} channel${plural}. Failed on ${channelNames(
+            failed.map((item) => item.channelId),
+          )}: ${failed[0].error}`,
+        });
+      } else {
+        setStatus({ kind: 'success', message: `${done} on ${count} channel${plural} in Buffer.` });
+      }
+
       setFile(null);
       setInputKey((key) => key + 1);
       setText('');
@@ -177,17 +206,30 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="channel" className={LABEL}>Channel</label>
-            <select id="channel" value={channelId} onChange={(event) => setChannelId(event.target.value)} className={INPUT}>
+          <fieldset className="flex min-w-0 flex-col gap-2">
+            <legend className={`${LABEL} mb-2`}>
+              Channels{selectedIds.length > 1 ? ` (${selectedIds.length} selected)` : ''}
+            </legend>
+            <div className="flex flex-col border border-[#34332F]">
               {channels.map((channel) => (
-                <option key={channel.id} value={channel.id}>
-                  {channel.name} ({serviceName(channel.service)})
-                </option>
+                <label
+                  key={channel.id}
+                  className="flex cursor-pointer items-center gap-3 border-t border-[#34332F] p-3 text-sm first:border-t-0"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(channel.id)}
+                    onChange={() => toggleChannel(channel.id)}
+                    className="size-4 shrink-0 accent-terracotta"
+                  />
+                  <span className="min-w-0 truncate">
+                    {channel.name} <span className="text-muted">({serviceName(channel.service)})</span>
+                  </span>
+                </label>
               ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
+            </div>
+          </fieldset>
+          <div className="flex min-w-0 flex-col gap-2">
             <label htmlFor="when" className={LABEL}>When</label>
             <select
               id="when"
@@ -243,7 +285,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
               status.kind === 'error' ? 'text-[#E8A897]' : status.kind === 'success' ? 'text-olive-text' : 'text-muted'
             }`}
           >
-            {status.kind === 'idle' ? 'The image stays hosted until Buffer publishes the post.' : status.message}
+            {status.kind === 'idle' ? 'The image stays hosted until Buffer publishes every post.' : status.message}
           </p>
           <button
             type="submit"

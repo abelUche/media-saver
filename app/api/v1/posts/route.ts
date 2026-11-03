@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const options = parsePostOptions({
-      channelId: formData.get('channelId'),
+      channelIds: formData.getAll('channelId'),
       text: formData.get('text'),
       dueAt: formData.get('dueAt'),
       draft: formData.get('draft'),

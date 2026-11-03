@@ -42,7 +42,7 @@ export default function Home() {
       <SiteHeader />
 
       <main>
-        <section className="mx-auto grid max-w-6xl items-center gap-16 px-6 pb-24 pt-20 md:px-8 md:pt-28 lg:grid-cols-[1.3fr_1fr]">
+        <section className="mx-auto grid max-w-6xl items-center gap-16 px-6 pb-24 pt-9 md:px-8 md:pt-28 lg:grid-cols-[1.3fr_1fr]">
           <div className="flex flex-col gap-7">
             <p className="text-sm text-muted">Media hosting for the Buffer API</p>
             <h1 className="font-serif text-5xl font-light leading-[1.02] tracking-[-0.025em] sm:text-6xl lg:text-7xl">
@@ -170,7 +170,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      
+
         <SiteFooter />
       
     </>

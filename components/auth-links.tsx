@@ -7,14 +7,9 @@ const HEADER_BUTTON =
 
 export function LoggedOutLinks() {
   return (
-    <>
-      <a href="/api/auth/login" className="text-muted hover:text-paper">
-        Log in
-      </a>
-      <a href="/api/auth/login" className={HEADER_BUTTON}>
-        Connect Buffer
-      </a>
-    </>
+    <a href="/api/auth/login" className={HEADER_BUTTON}>
+      Connect Buffer
+    </a>
   );
 }
 

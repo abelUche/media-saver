@@ -13,6 +13,7 @@ const SECTIONS = [
   { id: 'quick-start', label: 'Quick start' },
   { id: 'authentication', label: 'Authentication' },
   { id: 'create-post', label: 'Create a post' },
+  { id: 'large-files', label: 'Large files' },
   { id: 'list-channels', label: 'List channels' },
   { id: 'errors', label: 'Errors' },
   { id: 'rate-limits', label: 'Rate limits' },
@@ -20,7 +21,7 @@ const SECTIONS = [
 ];
 
 const POST_FIELDS = [
-  { name: 'file', required: 'Yes', description: 'JPEG, PNG or GIF, up to 4 MB.' },
+  { name: 'file', required: 'Yes', description: 'JPEG, PNG or GIF, up to 4 MB. For files up to 20 MB, use the two-step upload below.' },
   { name: 'channelId', required: 'Yes', description: 'A channel ID from your dashboard or GET /channels.' },
   { name: 'text', required: 'Yes', description: 'The post text, within the network’s character limit.' },
   {
@@ -39,7 +40,8 @@ const ERRORS = [
   { code: '400', meaning: 'A required field is missing or invalid. The message names the field.' },
   { code: '401', meaning: 'The API key is missing or revoked, or your Buffer connection needs renewing.' },
   { code: '404', meaning: 'Something you referenced, such as a channel, was not found.' },
-  { code: '413', meaning: 'The file is larger than 4 MB.' },
+  { code: '409', meaning: 'The file has not been uploaded yet, or that upload already has a post.' },
+  { code: '413', meaning: 'The file is too large: 4 MB in one request, or 20 MB with the two-step upload.' },
   { code: '415', meaning: 'The file type is not supported.' },
   {
     code: '422',
@@ -81,6 +83,28 @@ const CHANNELS_RESPONSE = `{
 const ERROR_RESPONSE = `{
   "error": "text is required"
 }`;
+
+const UPLOAD_STEP_1 = `curl -X POST ${BASE_URL}/uploads \\
+  -H "Authorization: Bearer ms_live_your_key_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{"fileName":"photo.jpg","contentType":"image/jpeg","size":8123456}'`;
+
+const UPLOAD_STEP_1_RESPONSE = `{
+  "uploadId": "7b90b90b-9c9d-4689-8571-a0de326552e8",
+  "uploadUrl": "https://…",
+  "publicUrl": "https://media.mediasaver.si/…",
+  "expiresIn": 600,
+  "headers": { "Content-Type": "image/jpeg" }
+}`;
+
+const UPLOAD_STEP_2 = `curl -X PUT "UPLOAD_URL_FROM_STEP_1" \\
+  -H "Content-Type: image/jpeg" \\
+  --data-binary @photo.jpg`;
+
+const UPLOAD_STEP_3 = `curl -X POST ${BASE_URL}/posts \\
+  -H "Authorization: Bearer ms_live_your_key_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{"uploadId":"UPLOAD_ID_FROM_STEP_1","channelId":"YOUR_CHANNEL_ID","text":"We just shipped it."}'`;
 
 function CodeBlock({ children, response = false }: { children: string; response?: boolean }) {
   return (
@@ -261,6 +285,27 @@ export default function DocsPage() {
               </li>
             </ol>
           </section>
+        <section id="large-files" className="flex scroll-mt-8 flex-col gap-[18px]">
+            <SectionHeading>Large files</SectionHeading>
+            <p className="leading-[1.7] text-muted">
+            For images up to 20 MB, upload the file directly to storage in three steps. The file never passes
+            through Media Saver’s servers, so the 4 MB limit does not apply.
+            </p>
+            <p className="leading-[1.7] text-muted">
+            1. Ask for an upload address, giving the file’s name, type and exact size in bytes.
+            </p>
+            <CodeBlock>{UPLOAD_STEP_1}</CodeBlock>
+            <CodeBlock response>{UPLOAD_STEP_1_RESPONSE}</CodeBlock>
+            <p className="leading-[1.7] text-muted">
+            2. Upload the file to uploadUrl within 10 minutes, with the headers from step 1. Do not send your API
+            key: the address carries its own permission.
+            </p>
+            <CodeBlock>{UPLOAD_STEP_2}</CodeBlock>
+            <p className="leading-[1.7] text-muted">
+            3. Create the post with the uploadId. Media Saver checks the file arrived before sending it to Buffer.
+            </p>
+            <CodeBlock>{UPLOAD_STEP_3}</CodeBlock>
+        </section>
         </article>
       </div>
 

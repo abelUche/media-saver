@@ -12,6 +12,7 @@ const BASE_URL = 'https://mediasaver.si/api/v1';
 const SECTIONS = [
   { id: 'quick-start', label: 'Quick start' },
   { id: 'authentication', label: 'Authentication' },
+  { id: 'key-safety', label: 'Keeping keys safe' },
   { id: 'create-post', label: 'Create a post' },
   { id: 'large-files', label: 'Large files' },
   { id: 'list-channels', label: 'List channels' },
@@ -185,6 +186,32 @@ export default function DocsPage() {
               revoke it on your dashboard and create a new one: the old key stops working immediately.
             </p>
             <CodeBlock>{AUTH_EXAMPLE}</CodeBlock>
+          </section>
+
+                    <section id="key-safety" className="flex scroll-mt-8 flex-col gap-4">
+            <SectionHeading>Keeping keys safe</SectionHeading>
+            <ul className="flex list-disc flex-col gap-3 pl-5 leading-[1.7] text-muted">
+              <li>
+                Create one key per automation, named after it, such as “n8n weekly posts”. If one is exposed, you
+                revoke only that key, and everything else keeps working.
+              </li>
+              <li>
+                Store keys in your tool’s credential manager, such as n8n credentials, Zapier connections or your
+                hosting provider’s environment variables. Never paste them into code, shared documents or screenshots.
+              </li>
+              <li>
+                To rotate a key, create the new one, update your automation to use it, check it works, then revoke the
+                old one. Nothing stops in between.
+              </li>
+              <li>
+                Rotate straight away if a key may have been exposed, or when someone with access leaves your team.
+                Otherwise, rotating every few months is good practice.
+              </li>
+              <li>
+                Check the “last used” date on your dashboard now and then. A key that hasn’t been used for weeks is
+                probably not needed, so revoke it.
+              </li>
+            </ul>
           </section>
 
           <section id="create-post" className="flex scroll-mt-8 flex-col gap-[18px]">

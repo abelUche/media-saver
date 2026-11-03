@@ -75,7 +75,8 @@ export function ApiKeysPanel({ initialKeys }: { initialKeys: KeySummary[] }) {
     <section className="flex flex-col gap-4 bg-ink p-6 md:p-8">
       <h2 className="font-serif text-[26px] font-light">API keys</h2>
       <p className="text-[13px] leading-relaxed text-muted">
-        Use a key in the Authorization header from n8n, Zapier or your scripts.
+        Use a key in the Authorization header from n8n, Zapier or your scripts. Create one per automation, and{' '}
+        <a href="/docs#key-safety" className="text-paper underline">keep it safe</a>.
       </p>
 
       <form onSubmit={createKey} className="flex gap-2">

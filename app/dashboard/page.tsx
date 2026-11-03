@@ -3,11 +3,13 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { connection } from 'next/server';
 import { getSession } from '@/lib/session';
-import { listChannels } from '@/lib/channels';
-import { getRecentUploads } from '@/lib/dashboard-data';
+import { getChannels } from '@/lib/channels';
 import { DashboardHeader } from '@/components/dashboard/dashboard-header';
 import { ChannelsPanel } from '@/components/dashboard/channels-panel';
 import { UploadsTable } from '@/components/dashboard/uploads-table';
+import { getActiveKeys, getRecentUploads } from '@/lib/dashboard-data';
+import { ScheduleForm } from '@/components/dashboard/schedule-form';
+import { ApiKeysPanel } from '@/components/dashboard/api-keys-panel';
 
 export const metadata: Metadata = {
   title: 'Dashboard | Media Saver',
@@ -21,14 +23,21 @@ async function DashboardContent() {
   }
   const userId = session.userId;
 
-  const [uploadList, channels] = await Promise.all([
+    const [uploadList, channels, keys] = await Promise.all([
     getRecentUploads(userId),
-    listChannels(userId).catch((error) => {
+    getChannels(userId).catch((error) => {
       console.error('Could not load channels:', error);
       return null;
     }),
+    getActiveKeys(userId),
   ]);
 
+  const initialKeys = keys.map((key) => ({
+    ...key,
+    createdAt: key.createdAt.toISOString(),
+    lastUsedAt: key.lastUsedAt ? key.lastUsedAt.toISOString() : null,
+  }));
+  
   const organizationName = channels?.[0]?.organizationName;
 
   return (
@@ -38,10 +47,13 @@ async function DashboardContent() {
       </p>
 
       <div className="grid gap-px border border-line bg-line lg:grid-cols-[1.7fr_1fr]">
-        <section className="flex flex-col gap-4 bg-ink p-9">
-          <h2 className="font-serif text-3xl font-light">Schedule a post</h2>
-          <p className="text-muted">The form arrives in part 2.</p>
-        </section>
+        <div className="grid gap-px border border-line bg-line lg:grid-cols-[1.7fr_1fr]">
+            <ScheduleForm channels={channels ?? []} />
+            <div className="grid gap-px">
+            <ApiKeysPanel initialKeys={initialKeys} />
+            <ChannelsPanel channels={channels} />
+            </div>
+        </div>
         <div className="grid gap-px">
           <section className="flex flex-col gap-4 bg-ink p-8">
             <h2 className="font-serif text-[26px] font-light">API keys</h2>

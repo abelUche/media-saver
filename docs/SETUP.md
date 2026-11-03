@@ -15,7 +15,7 @@ This guide records how the project's accounts and services were set up, and why 
 | Name | Media Saver | Buffer's brand rules forbid "Buffer" in an app's name. |
 | Public client | **Unticked** (private) | The app runs on a server (Vercel), so it can keep a client secret safe. A public client is only for apps whose code runs on users' devices. This choice is permanent. |
 | Permissions | `account:read`, `posts:read`, `posts:write` | Only what the app needs. Granted permissions can't be removed later. |
-| Redirect URIs | `https://localhost:3000/api/auth/callback` and `https://media-saver-six.vercel.app/api/auth/callback` | One for local development, one for the live site. |
+| Redirect URIs | `https://localhost:3000/api/auth/callback` and `https://mediasaver.si/api/auth/callback` | One for local development, one for the live site. |
 
 **What each permission is for**
 
@@ -121,7 +121,7 @@ git push -u origin main
 
 Vercel → Add New → Project → import `media-saver` → Deploy, with the default settings.
 
-- **Live URL:** https://media-saver-six.vercel.app
+- **Live URL:** https://mediasaver.si
 - Every push to the `main` branch redeploys the site automatically.
 
 ---
@@ -197,7 +197,7 @@ The same file with placeholder values only. It documents which variables the pro
 Project → Settings → Environment Variables. Add each variable for Production and Preview, using the live redirect URI:
 
 ```
-BUFFER_REDIRECT_URI=https://media-saver-six.vercel.app/api/auth/callback
+BUFFER_REDIRECT_URI=https://mediasaver.si/api/auth/callback
 ```
 
 Then redeploy, because new variables only take effect on the next deployment.

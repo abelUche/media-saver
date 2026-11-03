@@ -5,10 +5,11 @@ import { useState } from 'react';
 type Props = {
   value: string;
   label: string;
+   idleText?: string;
   className?: string;
 };
 
-export function CopyButton({ value, label, className }: Props) {
+export function CopyButton({ value, label, idleText = 'Copy ID', className }: Props) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -19,7 +20,7 @@ export function CopyButton({ value, label, className }: Props) {
 
   return (
     <button type="button" onClick={copy} aria-label={label} className={className}>
-      {copied ? 'Copied' : 'Copy ID'}
+      {copied ? 'Copied' : idleText}
     </button>
   );
 }

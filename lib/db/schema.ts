@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
 
 export const uploadStatus = pgEnum('upload_status', [
   'pending',
@@ -14,6 +14,10 @@ export const users = pgTable('users', {
   accessToken: text('access_token').notNull(),
   refreshToken: text('refresh_token').notNull(),
   tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }).notNull(),
+  channelsCache: jsonb('channels_cache').$type<
+    { id: string; name: string; service: string; organizationName: string }[]
+  >(),
+  channelsCachedAt: timestamp('channels_cached_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()

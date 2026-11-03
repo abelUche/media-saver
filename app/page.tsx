@@ -4,7 +4,7 @@ import { SiteHeader } from '@/components/site-header';
 import { MediaFlow } from '@/components/media-flow';
 import { ConnectCta, SessionCta } from '@/components/auth-links';
 
-const CURL_EXAMPLE = `curl -X POST https://media-saver-six.vercel.app/api/v1/posts \\
+const CURL_EXAMPLE = `curl -X POST https://mediasaver.si/api/v1/posts \\
   -H "Authorization: Bearer ms_live_••••••••" \\
   -F "file=@launch.jpg" \\
   -F "channelId=YOUR_CHANNEL_ID" \\

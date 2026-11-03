@@ -1,4 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { getFileInfo, deleteFile } from '@/lib/r2';
+import { MAX_DIRECT_UPLOAD_BYTES } from '@/lib/uploads';
 import { db } from '@/lib/db';
 import { uploads } from '@/lib/db/schema';
 import { getAccessToken, bufferRequest } from '@/lib/buffer';
@@ -109,4 +111,35 @@ export async function createPostForUpload(userId: string, upload: Upload, option
     .where(eq(uploads.id, upload.id));
 
   return { uploadId: upload.id, postId: post.id, status: post.status, dueAt: post.dueAt };
+}
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function postExistingUpload(userId: string, body: Record<string, unknown> | null) {
+  if (!body || typeof body.uploadId !== 'string' || !UUID_PATTERN.test(body.uploadId)) {
+    throw new ApiError('uploadId is required', 400);
+  }
+
+  const options = parsePostOptions(body);
+
+  const [upload] = await db
+    .select()
+    .from(uploads)
+    .where(and(eq(uploads.id, body.uploadId), eq(uploads.userId, userId)));
+
+  if (!upload) {
+    throw new ApiError('Upload not found', 404);
+  }
+
+  if (upload.status === 'pending' && !upload.bufferPostId) {
+    const info = await getFileInfo(upload.r2Key);
+    if (!info) {
+      throw new ApiError('The file has not been uploaded yet. Upload it to uploadUrl first.', 409);
+    }
+    if (info.size > MAX_DIRECT_UPLOAD_BYTES) {
+      await deleteFile(upload.r2Key);
+      throw new ApiError('File is larger than 20 MB', 413);
+    }
+  }
+
+  return createPostForUpload(userId, upload, options);
 }

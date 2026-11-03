@@ -6,7 +6,7 @@ import type { Channel } from '@/lib/channels';
 import { serviceName } from '@/lib/services';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
-const MAX_BYTES = 4 * 1024 * 1024;
+const MAX_BYTES = 20 * 1024 * 1024;
 
 const LABEL = 'text-xs text-muted';
 const INPUT = 'border border-[#34332F] bg-ink p-3 text-sm text-paper';
@@ -15,6 +15,8 @@ type Status =
   | { kind: 'idle' }
   | { kind: 'error'; message: string }
   | { kind: 'success'; message: string };
+
+type Phase = 'idle' | 'uploading' | 'scheduling';
 
 export function ScheduleForm({ channels }: { channels: Channel[] }) {
   const router = useRouter();
@@ -26,7 +28,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
   const [dueLocal, setDueLocal] = useState('');
   const [text, setText] = useState('');
   const [asDraft, setAsDraft] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
 
   function chooseFile(candidate: File | undefined) {
@@ -36,7 +38,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
       return;
     }
     if (candidate.size > MAX_BYTES) {
-      setStatus({ kind: 'error', message: 'This image is larger than 4 MB. Export a smaller copy and try again.' });
+      setStatus({ kind: 'error', message: 'This image is larger than 20 MB. Export a smaller copy and try again.' });
       return;
     }
     setFile(candidate);
@@ -64,22 +66,48 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('channelId', channelId);
-    formData.append('text', text);
-    if (when === 'time') formData.append('dueAt', new Date(dueLocal).toISOString());
-    if (asDraft) formData.append('draft', 'true');
-
-    setSubmitting(true);
     setStatus({ kind: 'idle' });
+    setPhase('uploading');
     try {
-      const response = await fetch('/api/v1/posts', { method: 'POST', body: formData });
-      const data = await response.json();
-      if (!response.ok) {
+      const slotResponse = await fetch('/api/v1/uploads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type, size: file.size }),
+      });
+      const slot = await slotResponse.json();
+      if (!slotResponse.ok) {
+        setStatus({ kind: 'error', message: slot.error ?? 'The upload could not be started.' });
+        return;
+      }
+
+      const putResponse = await fetch(slot.uploadUrl, {
+        method: 'PUT',
+        headers: slot.headers,
+        body: file,
+      });
+      if (!putResponse.ok) {
+        setStatus({ kind: 'error', message: 'The image could not be uploaded to storage. Try again.' });
+        return;
+      }
+
+      setPhase('scheduling');
+      const postResponse = await fetch('/api/v1/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uploadId: slot.uploadId,
+          channelId,
+          text,
+          dueAt: when === 'time' ? new Date(dueLocal).toISOString() : undefined,
+          draft: asDraft,
+        }),
+      });
+      const data = await postResponse.json();
+      if (!postResponse.ok) {
         setStatus({ kind: 'error', message: data.error ?? 'The post could not be created.' });
         return;
       }
+
       setStatus({ kind: 'success', message: asDraft ? 'Draft saved in Buffer.' : 'Post scheduled in Buffer.' });
       setFile(null);
       setInputKey((key) => key + 1);
@@ -89,7 +117,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
     } catch {
       setStatus({ kind: 'error', message: 'Media Saver could not be reached. Check your connection and try again.' });
     } finally {
-      setSubmitting(false);
+      setPhase('idle');
     }
   }
 
@@ -101,6 +129,10 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
       </section>
     );
   }
+
+  const busy = phase !== 'idle';
+  const buttonLabel =
+    phase === 'uploading' ? 'Uploading…' : phase === 'scheduling' ? 'Scheduling…' : asDraft ? 'Save draft' : 'Schedule post';
 
   return (
     <section className="flex flex-col gap-[22px] bg-ink p-6 md:p-9">
@@ -135,7 +167,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
             <span className="flex min-w-0 flex-1 basis-[200px] flex-col gap-1">
               <span className="truncate text-[15px]">{file ? file.name : 'Drop an image here, or click to choose'}</span>
               <span className="text-xs text-muted">
-                {file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'JPEG, PNG or GIF, up to 4 MB'}
+                {file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'JPEG, PNG or GIF, up to 20 MB'}
               </span>
             </span>
             <span className="bg-snow px-[18px] py-[11px] text-sm font-semibold text-ink">
@@ -215,10 +247,10 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
           </p>
           <button
             type="submit"
-            disabled={submitting}
+            disabled={busy}
             className="bg-terracotta px-[22px] py-[13px] text-sm font-semibold text-ink hover:bg-terracotta-hover disabled:opacity-50"
           >
-            {submitting ? 'Uploading…' : asDraft ? 'Save draft' : 'Schedule post'}
+            {buttonLabel}
           </button>
         </div>
       </form>

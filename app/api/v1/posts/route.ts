@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUserId } from '@/lib/auth';
 import { saveUpload } from '@/lib/uploads';
-import { parsePostOptions, createPostForUpload } from '@/lib/posts';
+import { parsePostOptions, createPostForUpload, postExistingUpload } from '@/lib/posts';
 import { ApiError, errorResponse } from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
@@ -9,6 +9,11 @@ export async function POST(request: NextRequest) {
     const userId = await getAuthenticatedUserId(request);
     if (!userId) {
       throw new ApiError('Not logged in or invalid API key', 401);
+    }
+
+    if (request.headers.get('content-type')?.includes('application/json')) {
+      const body = await request.json().catch(() => null);
+      return NextResponse.json(await postExistingUpload(userId, body), { status: 201 });
     }
 
     const formData = await request.formData().catch(() => null);

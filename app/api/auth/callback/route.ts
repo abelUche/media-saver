@@ -90,5 +90,5 @@ export async function GET(request: NextRequest) {
   session.userId = user.id;
   await session.save();
 
-  redirect('/');
+  redirect('/dashboard');
 }

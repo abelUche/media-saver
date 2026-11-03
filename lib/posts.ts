@@ -103,6 +103,7 @@ export async function createPostForUpload(userId: string, upload: Upload, option
     .set({ 
         status: 'scheduled', 
         bufferPostId: post.id,
+        channelId: options.channelId,
         dueAt: post.dueAt ? new Date(post.dueAt) : null,
      })
     .where(eq(uploads.id, upload.id));

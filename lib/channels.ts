@@ -53,17 +53,21 @@ export async function listChannels(userId: string): Promise<Channel[]> {
 }
 
 const CACHE_MS = 10 * 60 * 1000;
+const MIN_REFRESH_MS = 30 * 1000;
 
-export async function getChannels(userId: string): Promise<Channel[]> {
+export async function getChannels(
+  userId: string,
+  { force = false }: { force?: boolean } = {},
+): Promise<Channel[]> {
   const [user] = await db
     .select({ cache: users.channelsCache, cachedAt: users.channelsCachedAt })
     .from(users)
     .where(eq(users.id, userId));
 
-  const cacheIsFresh =
-    user?.cache && user.cachedAt && Date.now() - user.cachedAt.getTime() < CACHE_MS;
-  if (cacheIsFresh) {
-    return user.cache!;
+  const age = user?.cachedAt ? Date.now() - user.cachedAt.getTime() : Infinity;
+  const maxAge = force ? MIN_REFRESH_MS : CACHE_MS;
+  if (user?.cache && age < maxAge) {
+    return user.cache;
   }
 
   try {
@@ -74,7 +78,7 @@ export async function getChannels(userId: string): Promise<Channel[]> {
       .where(eq(users.id, userId));
     return channels;
   } catch (error) {
-    if (user?.cache) {
+    if (user?.cache && !force) {
       console.warn('Using cached channels because Buffer could not be reached:', error);
       return user.cache;
     }

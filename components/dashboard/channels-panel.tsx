@@ -1,11 +1,15 @@
 import type { Channel } from '@/lib/channels';
-import { CopyButton } from '@/components/copy-button';
 import { serviceName } from '@/lib/services';
+import { CopyButton } from '@/components/copy-button';
+import { RefreshChannelsButton } from '@/components/dashboard/refresh-channels-button';
 
 export function ChannelsPanel({ channels }: { channels: Channel[] | null }) {
   return (
-    <section className="flex flex-1 flex-col gap-3.5 bg-olive p-8">
-      <h2 className="font-serif text-[26px] font-light">Channels</h2>
+    <section className="flex min-w-0 flex-1 flex-col gap-3.5 bg-olive p-6 md:p-8">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="font-serif text-[26px] font-light">Channels</h2>
+        {channels !== null && <RefreshChannelsButton />}
+      </div>
 
       {channels === null ? (
         <p className="text-[13px] leading-relaxed text-olive-text">
@@ -17,11 +21,13 @@ export function ChannelsPanel({ channels }: { channels: Channel[] | null }) {
         </p>
       ) : channels.length === 0 ? (
         <p className="text-[13px] leading-relaxed text-olive-text">
-          No channels yet. Connect a social account in Buffer, then refresh this page.
+          No channels yet. Connect a social account in Buffer, then click Refresh.
         </p>
       ) : (
         <>
-          <p className="text-[13px] leading-relaxed text-olive-text">Copy a channel ID into your automation.</p>
+          <p className="text-[13px] leading-relaxed text-olive-text">
+            Copy a channel ID into your automation. Added a channel in Buffer? Click Refresh.
+          </p>
           <ul>
             {channels.map((channel) => (
               <li
@@ -35,7 +41,7 @@ export function ChannelsPanel({ channels }: { channels: Channel[] | null }) {
                 <CopyButton
                   value={channel.id}
                   label={`Copy channel ID for ${channel.name}`}
-                  className="border border-[#6B7A60] px-3 py-[7px] text-xs hover:border-paper"
+                  className="shrink-0 border border-[#6B7A60] px-3 py-[7px] text-xs hover:border-paper"
                 />
               </li>
             ))}

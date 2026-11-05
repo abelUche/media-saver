@@ -11,6 +11,12 @@ const STATUS: Record<Upload['status'], { label: string; className: string }> = {
   failed: { label: 'Failed', className: 'bg-[#2A1714] text-[#E8A897]' },
 };
 
+const DRAFT = { label: 'Draft', className: 'border border-dashed border-line-strong text-paper' };
+
+function isDraft(upload: Upload) {
+  return upload.status === 'scheduled' && upload.draft;
+}
+
 const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
@@ -22,6 +28,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', {
 
 function scheduledFor(upload: Upload) {
   if (upload.status === 'pending') return 'Not scheduled';
+  if (isDraft(upload)) return 'Draft in Buffer';
   if (!upload.dueAt) return 'Next queue slot';
   return `${DATE_FORMAT.format(upload.dueAt)} UTC`;
 }
@@ -65,7 +72,7 @@ export function UploadsTable({ uploads: rows, channels, postChannels }: Props) {
             </thead>
             <tbody>
               {rows.map((upload) => {
-                const status = STATUS[upload.status];
+                const status = isDraft(upload) ? DRAFT : STATUS[upload.status];
                 const isDeleted = upload.status === 'deleted';
                 return (
                   <tr key={upload.id} className="border-t border-line last:border-b">

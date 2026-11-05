@@ -110,6 +110,8 @@ export async function runCleanup(): Promise<CleanupSummary> {
     }
 
     const posts = await db.select().from(uploadPosts).where(eq(uploadPosts.uploadId, upload.id));
+    let checkedAny = false;
+    let sawDraft = false;
 
     for (const post of posts) {
       if (post.status !== 'scheduled') continue;
@@ -118,7 +120,9 @@ export async function runCleanup(): Promise<CleanupSummary> {
           postId: post.bufferPostId,
         });
         summary.checked++;
+        checkedAny = true;
         const bufferStatus = result.post?.status;
+        if (bufferStatus === 'draft') sawDraft = true;
         const next: PostState | null = !result.post
           ? 'removed'
           : bufferStatus === 'sent'
@@ -146,6 +150,10 @@ export async function runCleanup(): Promise<CleanupSummary> {
       }
     }
     if (summary.stoppedEarly) break;
+
+    if (upload.draft && checkedAny && !sawDraft) {
+      await db.update(uploads).set({ draft: false }).where(eq(uploads.id, upload.id));
+    }
 
     if (posts.length === 0 || posts.some((post) => post.status === 'scheduled')) {
       summary.unchanged++;

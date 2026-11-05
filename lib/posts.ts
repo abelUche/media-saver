@@ -96,7 +96,7 @@ function buildMutation(scheduled: boolean, service?: string) {
   `;
 }
 
-async function markScheduled(uploadId: string, created: CreatedPost[]) {
+async function markScheduled(uploadId: string, created: CreatedPost[], draft:boolean) {
   const dueTimes = created.map((post) => post.dueAt);
   const earliest = dueTimes.includes(null)
     ? null
@@ -106,6 +106,7 @@ async function markScheduled(uploadId: string, created: CreatedPost[]) {
     .update(uploads)
     .set({
       status: 'scheduled',
+      draft: draft,
       bufferPostId: created[0].postId,
       channelId: created[0].channelId,
       dueAt: earliest,
@@ -180,7 +181,7 @@ export async function createPostForUpload(userId: string, upload: Upload, option
     }
   } finally {
     if (created.length > 0) {
-      await markScheduled(upload.id, created);
+      await markScheduled(upload.id, created, options.draft);
     }
   }
 

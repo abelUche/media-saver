@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, text, timestamp, index, jsonb, boolean } from 'drizzle-orm/pg-core';
 
 export const uploadStatus = pgEnum('upload_status', [
   'pending',
@@ -37,6 +37,7 @@ export const uploads = pgTable(
     channelId: text('channel_id'),
     dueAt: timestamp('due_at', { withTimezone: true }),
     status: uploadStatus('status').notNull().default('pending'),
+    draft: boolean('draft').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },

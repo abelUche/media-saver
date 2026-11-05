@@ -80,6 +80,15 @@ export function UploadsTable({ uploads: rows, channels, postChannels }: Props) {
                       <div className="flex items-center gap-3.5">
                         {isDeleted ? (
                           <span className="size-11 shrink-0 border border-dashed border-line-strong" />
+                        ) : upload.r2Key.endsWith('.mp4') ? (
+                          <video
+                            src={upload.publicUrl}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            aria-hidden="true"
+                            className="size-11 shrink-0 bg-surface object-cover"
+                          />
                         ) : (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img

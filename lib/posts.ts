@@ -2,11 +2,10 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { uploads, uploadPosts } from '@/lib/db/schema';
 import { getAccessToken, bufferRequest, BufferApiError } from '@/lib/buffer';
-import { getFileInfo, deleteFile } from '@/lib/r2';
-import { MAX_DIRECT_UPLOAD_BYTES } from '@/lib/uploads';
-import { ApiError } from '@/lib/errors';
 import { getChannels } from '@/lib/channels';
-import build from 'next/dist/build';
+import { getFileInfo, deleteFile, isVideoKey } from '@/lib/r2';
+import { maxBytesForKey, sizeLabel } from '@/lib/uploads';
+import { ApiError } from '@/lib/errors';
 
 type Upload = typeof uploads.$inferSelect;
 
@@ -66,12 +65,16 @@ export function parsePostOptions(input: Record<string, unknown>): PostOptions {
   return { channelIds, text, dueAt: normalizedDueAt, draft: draft === true || draft === 'true' };
 }
 
-function buildMutation(scheduled: boolean, service?: string) {
+function instagramMetadata(video: boolean) {
+  return `metadata: { instagram: { type: ${video ? 'reel' : 'post'}, shouldShareToFeed: true } }`;
+}
+
+function buildMutation(scheduled: boolean, video: boolean, service?: string) {
   return `
     mutation CreatePost(
       $channelId: ChannelId!
       $text: String!
-      $imageUrl: String!
+      $mediaUrl: String!
       $saveToDraft: Boolean!
       ${scheduled ? '$dueAt: DateTime!' : ''}
     ) {
@@ -82,8 +85,8 @@ function buildMutation(scheduled: boolean, service?: string) {
         mode: ${scheduled ? 'customScheduled' : 'addToQueue'}
         ${scheduled ? 'dueAt: $dueAt' : ''}
         saveToDraft: $saveToDraft
-        ${service === 'instagram' ? 'metadata: { instagram: { type: post, shouldShareToFeed: true } }' : ''}
-        assets: [{ image: { url: $imageUrl } }]
+        ${service === 'instagram' ? instagramMetadata(video) : ''}
+        assets: [{ ${video ? 'video' : 'image'}: { url: $mediaUrl } }]
       }) {
         ... on PostActionSuccess {
           post { id status dueAt }
@@ -96,7 +99,7 @@ function buildMutation(scheduled: boolean, service?: string) {
   `;
 }
 
-async function markScheduled(uploadId: string, created: CreatedPost[], draft:boolean) {
+async function markScheduled(uploadId: string, created: CreatedPost[], draft: boolean) {
   const dueTimes = created.map((post) => post.dueAt);
   const earliest = dueTimes.includes(null)
     ? null
@@ -106,7 +109,7 @@ async function markScheduled(uploadId: string, created: CreatedPost[], draft:boo
     .update(uploads)
     .set({
       status: 'scheduled',
-      draft: draft,
+      draft,
       bufferPostId: created[0].postId,
       channelId: created[0].channelId,
       dueAt: earliest,
@@ -129,6 +132,8 @@ export async function createPostForUpload(userId: string, upload: Upload, option
 
   const accessToken = await getAccessToken(userId);
   const scheduled = Boolean(options.dueAt);
+  const video = isVideoKey(upload.r2Key);
+
   const channels = await getChannels(userId).catch(() => []);
   const services = new Map(channels.map((channel) => [channel.id, channel.service]));
 
@@ -144,16 +149,16 @@ export async function createPostForUpload(userId: string, upload: Upload, option
       }
       try {
         const data = await bufferRequest<CreatePostResult>(
-            accessToken, 
-            buildMutation(scheduled, services.get(channelId)),
-            {
-          channelId,
-          text: options.text,
-          imageUrl: upload.publicUrl,
-          saveToDraft: options.draft,
-          ...(scheduled ? { dueAt: options.dueAt } : {}),
-        },
-    );
+          accessToken,
+          buildMutation(scheduled, video, services.get(channelId)),
+          {
+            channelId,
+            text: options.text,
+            mediaUrl: upload.publicUrl,
+            saveToDraft: options.draft,
+            ...(scheduled ? { dueAt: options.dueAt } : {}),
+          },
+        );
 
         const post = data.createPost.post;
         if (!post) {
@@ -223,9 +228,10 @@ export async function postExistingUpload(userId: string, body: Record<string, un
     if (!info) {
       throw new ApiError('The file has not been uploaded yet. Upload it to uploadUrl first.', 409);
     }
-    if (info.size > MAX_DIRECT_UPLOAD_BYTES) {
+    const maxBytes = maxBytesForKey(upload.r2Key);
+    if (info.size > maxBytes) {
       await deleteFile(upload.r2Key);
-      throw new ApiError('File is larger than 20 MB', 413);
+      throw new ApiError(`File is larger than ${sizeLabel(maxBytes)}`, 413);
     }
   }
 

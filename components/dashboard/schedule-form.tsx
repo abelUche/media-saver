@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import type { Channel } from '@/lib/channels';
 import { serviceName } from '@/lib/services';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
-const MAX_BYTES = 20 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4'];
+const MB = 1024 * 1024;
+const MAX_IMAGE_BYTES = 20 * MB;
+const MAX_VIDEO_BYTES = 100 * MB;
 
 const LABEL = 'text-xs text-muted';
 const INPUT = 'border border-[#34332F] bg-ink p-3 text-sm text-paper';
@@ -44,11 +46,16 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
   function chooseFile(candidate: File | undefined) {
     if (!candidate) return;
     if (!ALLOWED_TYPES.includes(candidate.type)) {
-      setStatus({ kind: 'error', message: 'Choose a JPEG, PNG or GIF image.' });
+      setStatus({ kind: 'error', message: 'Choose a JPEG, PNG or GIF image, or an MP4 video.' });
       return;
     }
-    if (candidate.size > MAX_BYTES) {
-      setStatus({ kind: 'error', message: 'This image is larger than 20 MB. Export a smaller copy and try again.' });
+    const isVideo = candidate.type.startsWith('video/');
+    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    if (candidate.size > maxBytes) {
+      setStatus({
+        kind: 'error',
+        message: `This ${isVideo ? 'video' : 'image'} is larger than ${maxBytes / MB} MB. Export a smaller copy and try again.`,
+      });
       return;
     }
     setFile(candidate);
@@ -64,7 +71,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file) {
-      setStatus({ kind: 'error', message: 'Choose an image to post.' });
+      setStatus({ kind: 'error', message: 'Choose an image or video to post.' });
       return;
     }
     if (selectedIds.length === 0) {
@@ -100,7 +107,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
         body: file,
       });
       if (!putResponse.ok) {
-        setStatus({ kind: 'error', message: 'The image could not be uploaded to storage. Try again.' });
+        setStatus({ kind: 'error', message: 'The file could not be uploaded to storage. Try again.' });
         return;
       }
 
@@ -161,7 +168,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
 
   const busy = phase !== 'idle';
   const buttonLabel =
-    phase === 'uploading' ? 'Uploading…' : phase === 'scheduling' ? 'Scheduling…' : asDraft ? 'Save draft' : 'Schedule post';
+    phase === 'uploading' ? (file?.type.startsWith('video/') ? 'Uploading video…' : 'Uploading…') : phase === 'scheduling' ? 'Scheduling…' : asDraft ? 'Save draft' : 'Schedule post';
 
   return (
     <section className="flex flex-col gap-[22px] bg-ink p-6 md:p-9">
@@ -194,13 +201,13 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
               <path d="M7 19l4.5-5.5 3.2 3.6 2.3-2.6L21 19" className="stroke-muted" strokeWidth="1.2" strokeLinejoin="round" />
             </svg>
             <span className="flex min-w-0 flex-1 basis-[200px] flex-col gap-1">
-              <span className="truncate text-[15px]">{file ? file.name : 'Drop an image here, or click to choose'}</span>
+              <span className="truncate text-[15px]">{file ? file.name : 'Drop an image or video here, or click to choose'}</span>
               <span className="text-xs text-muted">
-                {file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'JPEG, PNG or GIF, up to 20 MB'}
+                {file ? `${(file.size / MB).toFixed(1)} MB` : 'JPEG, PNG or GIF up to 20 MB, or MP4 up to 100 MB'}
               </span>
             </span>
             <span className="bg-snow px-[18px] py-[11px] text-sm font-semibold text-ink">
-              {file ? 'Change image' : 'Choose image'}
+              {file ? 'Change file' : 'Choose file'}
             </span>
           </label>
         </div>
@@ -285,7 +292,7 @@ export function ScheduleForm({ channels }: { channels: Channel[] }) {
               status.kind === 'error' ? 'text-[#E8A897]' : status.kind === 'success' ? 'text-olive-text' : 'text-muted'
             }`}
           >
-            {status.kind === 'idle' ? 'The image stays hosted until Buffer publishes every post.' : status.message}
+            {status.kind === 'idle' ? 'The file stays hosted until Buffer publishes every post.' : status.message}
           </p>
           <button
             type="submit"

@@ -22,7 +22,16 @@ export const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/gif': 'gif',
+  'video/mp4': 'mp4',
 };
+
+export function isVideoType(contentType: string) {
+  return contentType.startsWith('video/');
+}
+
+export function isVideoKey(key: string) {
+  return key.endsWith('.mp4');
+}
 
 export const PRESIGN_EXPIRES_SECONDS = 10 * 60;
 

@@ -72,6 +72,7 @@ export async function bufferRequest<T>(
     throw new BufferApiError('Buffer connection expired. Please log in again.', 401);
   }
   if (!response.ok) {
+    console.error('Buffer error body:', await response.clone().text());
     throw new BufferApiError(`Buffer API returned ${response.status}`, 502);
   }
 

@@ -5,6 +5,8 @@ import { getAccessToken, bufferRequest, BufferApiError } from '@/lib/buffer';
 import { getFileInfo, deleteFile } from '@/lib/r2';
 import { MAX_DIRECT_UPLOAD_BYTES } from '@/lib/uploads';
 import { ApiError } from '@/lib/errors';
+import { getChannels } from '@/lib/channels';
+import build from 'next/dist/build';
 
 type Upload = typeof uploads.$inferSelect;
 
@@ -64,7 +66,7 @@ export function parsePostOptions(input: Record<string, unknown>): PostOptions {
   return { channelIds, text, dueAt: normalizedDueAt, draft: draft === true || draft === 'true' };
 }
 
-function buildMutation(scheduled: boolean) {
+function buildMutation(scheduled: boolean, service?: string) {
   return `
     mutation CreatePost(
       $channelId: ChannelId!
@@ -80,6 +82,7 @@ function buildMutation(scheduled: boolean) {
         mode: ${scheduled ? 'customScheduled' : 'addToQueue'}
         ${scheduled ? 'dueAt: $dueAt' : ''}
         saveToDraft: $saveToDraft
+        ${service === 'instagram' ? 'metadata: { instagram: { type: post, shouldShareToFeed: true } }' : ''}
         assets: [{ image: { url: $imageUrl } }]
       }) {
         ... on PostActionSuccess {
@@ -125,7 +128,8 @@ export async function createPostForUpload(userId: string, upload: Upload, option
 
   const accessToken = await getAccessToken(userId);
   const scheduled = Boolean(options.dueAt);
-  const mutation = buildMutation(scheduled);
+  const channels = await getChannels(userId).catch(() => []);
+  const services = new Map(channels.map((channel) => [channel.id, channel.service]));
 
   const created: CreatedPost[] = [];
   const errors: ChannelError[] = [];
@@ -138,13 +142,17 @@ export async function createPostForUpload(userId: string, upload: Upload, option
         continue;
       }
       try {
-        const data = await bufferRequest<CreatePostResult>(accessToken, mutation, {
+        const data = await bufferRequest<CreatePostResult>(
+            accessToken, 
+            buildMutation(scheduled, services.get(channelId)),
+            {
           channelId,
           text: options.text,
           imageUrl: upload.publicUrl,
           saveToDraft: options.draft,
           ...(scheduled ? { dueAt: options.dueAt } : {}),
-        });
+        },
+    );
 
         const post = data.createPost.post;
         if (!post) {

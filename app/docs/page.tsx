@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 const BASE_URL = 'https://mediasaver.si/api/v1';
 
 // Set this to the workflow file's link (for example on GitHub) once it's published.
-const N8N_WORKFLOW_URL: string | null = null;
+const N8N_WORKFLOW_URL: string | null = '/media-saver-n8n-workflow.json';
 
 const SECTIONS = [
   { id: 'quick-start', label: 'Quick start' },
@@ -455,7 +455,7 @@ export default function DocsPage() {
             {N8N_WORKFLOW_URL && (
               <p className="leading-[1.7] text-olive-text">
                 Or{' '}
-                <a href={N8N_WORKFLOW_URL} className="text-paper underline">
+                <a href={N8N_WORKFLOW_URL} download className="text-paper underline">
                   download the ready-made workflow
                 </a>{' '}
                 and import it into n8n.

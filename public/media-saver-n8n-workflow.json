@@ -1,0 +1,123 @@
+{
+  "name": "Media Saver",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7205cc17-d0d3-4bd8-8c18-5dfb568cbba8",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "  https://picsum.photos/1200/630.jpg",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "03ce5c58-afec-4cee-94ed-3f530391caac",
+      "name": "Get image"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mediasaver.si/api/v1/posts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "channelId",
+              "value": "YOUR_CHANNEL_ID"
+            },
+            {
+              "name": "text",
+              "value": "Posted from n8n with Media Saver."
+            },
+            {
+              "name": "draft",
+              "value": "true"
+            },
+            {
+              "name": "channelId",
+              "value": "YOUR_CHANNEL_ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "c271bc94-f9e3-4f15-990f-051257312392",
+      "name": "Post via Media Saver",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "eA6GPJByPnbwrvJ5",
+          "name": "Header Auth account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get image": {
+      "main": [
+        [
+          {
+            "node": "Post via Media Saver",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "956be579-cc46-4a7a-9678-5a2186efb5f4",
+  "meta": {
+    "instanceId": "bc96356dda836f82d48a34c13b77fd6815de027a8745a91582693d420247e297"
+  },
+  "nodeGroups": [],
+  "id": "oAEN6CtqTAVnxlG0",
+  "tags": []
+}

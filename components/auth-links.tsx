@@ -1,16 +1,13 @@
 import Link from 'next/link';
-import { getSession } from '@/lib/session';
 import { connection } from 'next/server';
+import { getSession } from '@/lib/session';
+import { LoginLink } from '@/components/login-link';
 
 const HEADER_BUTTON =
-  'bg-snow px-3 py-2 text-[13px] font-semibold text-ink sm:px-[18px] sm:py-2.5 sm:text-sm';
+  'bg-snow px-3 py-2 text-[13px] font-semibold text-ink hover:bg-paper sm:px-[18px] sm:py-2.5 sm:text-sm';
 
 export function LoggedOutLinks() {
-  return (
-    <a href="/api/auth/login" className={HEADER_BUTTON}>
-      Connect Buffer
-    </a>
-  );
+  return <LoginLink className={HEADER_BUTTON}>Connect Buffer</LoginLink>;
 }
 
 export async function HeaderAuthLinks() {
@@ -27,11 +24,7 @@ export async function HeaderAuthLinks() {
 type CtaProps = { className: string };
 
 export function ConnectCta({ className }: CtaProps) {
-  return (
-    <a href="/api/auth/login" className={className}>
-      Connect your Buffer account
-    </a>
-  );
+  return <LoginLink className={className}>Connect your Buffer account</LoginLink>;
 }
 
 export async function SessionCta({ className }: CtaProps) {

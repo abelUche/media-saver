@@ -36,3 +36,20 @@
   .ms-flow, .ms-file, .ms-tag, .ms-lift { animation: none; }
   .ms-tag { opacity: 1; }
 }
+@layer base {
+  a,
+  button {
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms,
+      opacity 150ms,
+      transform 100ms;
+  }
+
+  button:active:not(:disabled),
+  a[class*='bg-']:active,
+  a[class*='border']:active {
+    transform: translateY(1px);
+  }
+}

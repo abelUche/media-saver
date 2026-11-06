@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { AuthErrorNotice } from '@/components/auth-error-notice';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import { MediaFlow } from '@/components/media-flow';
@@ -44,13 +45,14 @@ export default function Home() {
       <main>
         <section className="mx-auto grid max-w-6xl items-center gap-16 px-6 pb-24 pt-9 md:px-8 md:pt-28 lg:grid-cols-[1.3fr_1fr]">
           <div className="flex flex-col gap-7">
+            <Suspense fallback={null}><AuthErrorNotice /></Suspense>
             <p className="text-sm text-muted">Media hosting for the Buffer API</p>
             <h1 className="font-serif text-5xl font-light leading-[1.02] tracking-[-0.025em] sm:text-6xl lg:text-7xl">
-              Post images through the Buffer API,{' '}
+              Post images and video through the Buffer API,{' '}
               <em className="italic text-terracotta">without hosting them.</em>
             </h1>
             <p className="max-w-[480px] text-base leading-relaxed text-muted">
-              Send Media Saver a file and your post. It stores the image, schedules the post in your
+              Send Media Saver a file and your post. It stores the file, schedules the post in your
               Buffer account, and deletes the file once it has been published.
             </p>
             <div className="flex flex-wrap items-center gap-6 pt-1">

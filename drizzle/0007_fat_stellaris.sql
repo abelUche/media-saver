@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "token_refresh_locked_until" timestamp with time zone;

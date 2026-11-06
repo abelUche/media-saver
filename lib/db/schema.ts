@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   accessToken: text('access_token').notNull(),
   refreshToken: text('refresh_token').notNull(),
   tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }).notNull(),
+  tokenRefreshLockedUntil: timestamp('token_refresh_locked_until', { withTimezone: true }),
   channelsCache: jsonb('channels_cache').$type<
     { id: string; name: string; service: string; organizationName: string }[]
   >(),

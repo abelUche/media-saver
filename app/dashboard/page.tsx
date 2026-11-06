@@ -10,6 +10,7 @@ import { ScheduleForm } from '@/components/dashboard/schedule-form';
 import { ApiKeysPanel } from '@/components/dashboard/api-keys-panel';
 import { ChannelsPanel } from '@/components/dashboard/channels-panel';
 import { UploadsTable } from '@/components/dashboard/uploads-table';
+import { BufferApiError } from '@/lib/buffer';
 
 export const metadata: Metadata = {
   title: 'Dashboard | Media Saver',
@@ -23,10 +24,12 @@ async function DashboardContent() {
   }
   const userId = session.userId;
 
+  let channelsBusy = false;
   const [uploadList, channels, keys] = await Promise.all([
     getRecentUploads(userId),
     getChannels(userId).catch((error) => {
       console.error('Could not load channels:', error);
+      channelsBusy = error instanceof BufferApiError && error.status === 429;
       return null;
     }),
     getActiveKeys(userId),
@@ -57,7 +60,7 @@ async function DashboardContent() {
         <ScheduleForm channels={channels ?? []} />
         <div className="grid min-w-0 gap-px">
           <ApiKeysPanel initialKeys={initialKeys} />
-          <ChannelsPanel channels={channels} />
+          <ChannelsPanel channels={channels} busy={channelsBusy} />
         </div>
       </div>
 

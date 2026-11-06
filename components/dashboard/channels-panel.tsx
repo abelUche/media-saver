@@ -3,7 +3,12 @@ import { serviceName } from '@/lib/services';
 import { CopyButton } from '@/components/copy-button';
 import { RefreshChannelsButton } from '@/components/dashboard/refresh-channels-button';
 
-export function ChannelsPanel({ channels }: { channels: Channel[] | null }) {
+type Props = {
+  channels: Channel[] | null;
+  busy?: boolean;
+};
+
+export function ChannelsPanel({ channels, busy = false }: Props) {
   return (
     <section className="flex min-w-0 flex-1 flex-col gap-3.5 bg-olive p-6 md:p-8">
       <div className="flex items-start justify-between gap-3">
@@ -11,7 +16,12 @@ export function ChannelsPanel({ channels }: { channels: Channel[] | null }) {
         {channels !== null && <RefreshChannelsButton />}
       </div>
 
-      {channels === null ? (
+      {channels === null && busy ? (
+        <p className="text-[13px] leading-relaxed text-olive-text">
+          Buffer is busy right now, so your channels couldn’t be loaded. Nothing is wrong with your account.
+          Refresh this page in a few minutes.
+        </p>
+      ) : channels === null ? (
         <p className="text-[13px] leading-relaxed text-olive-text">
           Your channels couldn’t be loaded.{' '}
           <a href="/api/auth/login" className="text-paper underline">

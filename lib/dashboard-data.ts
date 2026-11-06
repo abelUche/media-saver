@@ -2,13 +2,13 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { apiKeys, uploads, uploadPosts } from '@/lib/db/schema';
 
-export async function getRecentUploads(userId: string) {
+export async function getRecentUploads(userId: string, limit = 25) {
   return db
     .select()
     .from(uploads)
     .where(eq(uploads.userId, userId))
     .orderBy(desc(uploads.createdAt))
-    .limit(25);
+    .limit(limit);
 }
 
 export async function getActiveKeys(userId: string) {

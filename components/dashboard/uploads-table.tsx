@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { uploads } from '@/lib/db/schema';
 import type { Channel } from '@/lib/channels';
 
@@ -37,9 +38,10 @@ type Props = {
   uploads: Upload[];
   channels: Channel[];
   postChannels: Record<string, string[]>;
+  nextLimit: number | null;
 };
 
-export function UploadsTable({ uploads: rows, channels, postChannels }: Props) {
+export function UploadsTable({ uploads: rows, channels, postChannels, nextLimit }: Props) {
   const channelNames = new Map(channels.map((channel) => [channel.id, channel.name]));
 
   function channelsFor(upload: Upload) {
@@ -49,7 +51,7 @@ export function UploadsTable({ uploads: rows, channels, postChannels }: Props) {
   }
 
   return (
-    <section className="flex flex-col gap-5">
+    <section id="uploads" className="flex scroll-mt-8 flex-col gap-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-serif text-4xl font-light">Uploads</h2>
         <span className="text-[13px] text-muted">Files are deleted once every post has published</span>
@@ -114,6 +116,16 @@ export function UploadsTable({ uploads: rows, channels, postChannels }: Props) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {nextLimit && (
+        <Link
+          href={`/dashboard?uploads=${nextLimit}#uploads`}
+          scroll={false}
+          className="self-start border border-line-strong px-[18px] py-[11px] text-sm hover:border-paper"
+        >
+          Show more uploads
+        </Link>
       )}
     </section>
   );
